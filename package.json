@@ -1,0 +1,46 @@
+{
+  "name": "ts-result-chain",
+  "version": "0.1.0",
+  "description": "TypeScript utilities for error handling, result patterns, and data transformations",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "typescript",
+    "error-handling",
+    "result",
+    "data-transformation",
+    "case-conversion"
+  ],
+  "author": "SJ Lee <sjtommylee.dev@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://git@github.com:0xsj/ts-result-chain.git"
+  },
+  "bugs": {
+    "url": "https://github.com/0xsj/ts-result-chain/issues"
+  },
+  "homepage": "https://github.com/0xsj/ts-result-chain#readme",
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^18.15.11",
+    "@typescript-eslint/eslint-plugin": "^5.57.1",
+    "@typescript-eslint/parser": "^5.57.1",
+    "eslint": "^8.37.0",
+    "jest": "^29.5.0",
+    "prettier": "^2.8.7",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.3"
+  },
+  "dependencies": {}
+}
