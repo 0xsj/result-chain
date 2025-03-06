@@ -1,0 +1,11 @@
+echo "src/
+tsconfig.json
+jest.config.js
+.eslintrc.js
+**/*.test.ts
+**/__tests__/
+coverage/
+.git/
+.github/
+.gitignore
+node_modules/" > .npmignore
