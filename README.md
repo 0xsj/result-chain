@@ -2,6 +2,10 @@
 
 A TypeScript utility library for robust error handling and result management with a clean, functional API.
 
+[![npm version](https://img.shields.io/npm/v/result-chain.svg)](https://www.npmjs.com/package/result-chain)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](https://www.typescriptlang.org/)
+
 ## Features
 
 - **Strong Typing**: Fully typed errors and results for better compile-time safety
@@ -69,6 +73,58 @@ async function getUserProfile(id: string) {
     .toServiceResult();
 }
 ```
+
+## API Documentation
+
+### Error Types
+
+#### `DataError`
+Repository layer errors with the following kinds:
+- `not_found`: Resource not found
+- `invalid`: Invalid input or state
+- `query`: Query execution error
+- `connection`: Connection or network error
+- `unexpected`: Unexpected or unknown error
+
+#### `ServiceError`
+Service layer errors with the following kinds:
+- `validation`: Input validation error
+- `not_found`: Resource not found
+- `auth`: Authentication or authorization error
+- `network`: Network or external service error
+- `unexpected`: Unexpected or unknown error
+
+### Result Types
+
+#### `DataResult<T>`
+Repository layer result with either success data or a data error:
+- `{ kind: "success"; data: T }`
+- `{ kind: "error"; error: DataError }`
+
+#### `ServiceResult<T>`
+Service layer result with either success data or a service error:
+- `{ kind: "success"; data: T }`
+- `{ kind: "error"; error: ServiceError }`
+
+### ResultChain Class
+
+The `ResultChain` class provides a fluent API for working with results:
+
+- `mapErr()`: Map data errors to service errors
+- `map()`: Transform success data
+- `validate()`: Validate data against a schema
+- `log()`: Log the result
+- `unwrap()`: Get the raw result
+- `toResult()`: Convert to the appropriate result type
+- `toServiceResult()`: Explicitly convert to a service result
+
+### Utility Functions
+
+- `chain()`: Create a ResultChain from a result
+- `serializeErr()`: Serialize any error with context
+- `maskSensitive()`: Mask sensitive data fields
+- `transformToCamelCase()`: Convert object keys to camelCase
+- `transformToSnakeCase()`: Convert object keys to snake_case
 
 ## Error Handling Examples
 
@@ -150,7 +206,65 @@ async function registerUser(input: UserInput): Promise<ServiceResult<User>> {
 }
 ```
 
-## Case Conversion Utilities
+## Advanced Features
+
+### Error Serialization
+
+Serialize errors with control over stack traces and formatting:
+
+```typescript
+import { serializeErr } from 'result-chain';
+
+try {
+  // Some operation that might fail
+} catch (error) {
+  const serialized = serializeErr(error, 
+    { operation: 'processPayment', userId: '123' },
+    { 
+      prettyPrint: true, 
+      includeStacks: 'truncated',
+      stackFrameLimit: 3 
+    }
+  );
+  
+  console.log(serialized);
+  // or send to your logging service
+  logger.error(serialized);
+}
+```
+
+### Data Masking
+
+Automatically mask sensitive information in logs:
+
+```typescript
+import { maskSensitive } from 'result-chain';
+
+const userData = {
+  name: 'John Doe',
+  email: 'john@example.com',
+  accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  password: 'supersecret',
+  preferences: {
+    apiKey: '12345abcde'
+  }
+};
+
+const maskedData = maskSensitive(userData);
+console.log(maskedData);
+// Output:
+// {
+//   name: 'John Doe',
+//   email: 'john@example.com',
+//   accessToken: 'eyJh...kpXV',
+//   password: '********',
+//   preferences: {
+//     apiKey: '1234...bcde'
+//   }
+// }
+```
+
+### Case Conversion Utilities
 
 Convert between snake_case and camelCase formats:
 
@@ -167,4 +281,41 @@ const apiResponse = {
   last_name: 'Doe',
   email_address: 'john@example.com',
   account_settings: {
-    notification_
+    notification_preferences: {
+      email_updates: true,
+      sms_alerts: false
+    }
+  }
+};
+
+// Convert to camelCase for your application
+const userData = transformToCamelCase(apiResponse);
+console.log(userData);
+// Output:
+// {
+//   userId: '123',
+//   firstName: 'John',
+//   lastName: 'Doe',
+//   emailAddress: 'john@example.com',
+//   accountSettings: {
+//     notificationPreferences: {
+//       emailUpdates: true,
+//       smsAlerts: false
+//     }
+//   }
+// }
+
+// When sending back to the API, convert to snake_case
+const updateData = {
+  userId: '123',
+  emailAddress: 'john.doe@example.com'
+};
+
+const apiData = transformToSnakeCase(updateData);
+console.log(apiData);
+// Output:
+// {
+//   user_id: '123',
+//   email_address: 'john.doe@example.com'
+// }
+```
