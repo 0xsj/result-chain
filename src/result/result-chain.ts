@@ -282,6 +282,35 @@ export class ResultChain<T, E extends DataError | ServiceError> {
       };
     }
   }
+
+  /**
+ * Asynchronously transforms the data in a success result
+ */
+async mapAsync<U>(fn: (data: T) => Promise<U>): Promise<ResultChain<U, E>> {
+  if (this.result.kind === 'success' && this.result.data !== undefined) {
+    try {
+      const transformed = await fn(this.result.data);
+      return new ResultChain<U, E>({
+        kind: 'success',
+        data: transformed
+      });
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      return new ResultChain<U, E>({
+        kind: "error",
+        error: (this.result.error?.constructor as any).unexpected(
+          "Error transforming data asynchronously",
+          { source: err },
+        ) as E,
+      });
+    }
+  }
+
+  return new ResultChain<U, E>({
+    kind: "error",
+    error: this.result.error
+  });
+}
 }
 
 /**
@@ -293,4 +322,50 @@ export function chain<T, E extends DataError | ServiceError>(result: {
   error?: E;
 }): ResultChain<T, E> {
   return new ResultChain<T, E>(result);
+}
+
+
+/**
+ * Retry capabilities
+ */
+
+export async function retry<T, E extends DataError | ServiceError>(
+  operation: () => Promise<{ kind: "success" | "error"; data?: T; error?: E }>,
+  options: {
+    maxAttempts?: number;
+    delayMs?: number;
+    backoffFactor?: number;
+    shouldRetry?: (error: E, attempt: number) => boolean;
+  } = {}
+): Promise<{ kind: "success" | "error"; data?: T; error?: E }> {
+  const {
+    maxAttempts = 3,
+    delayMs = 1000,
+    backoffFactor = 2,
+    shouldRetry = () => true,
+  } = options;
+
+  let lastResult: { kind: "success" | "error"; data?: T; error?: E } = {
+    kind: "error",
+    error: undefined as unknown as E, 
+  };
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    lastResult = await operation();
+    
+    if (lastResult.kind === "success") {
+      return lastResult;
+    }
+    
+    if (attempt < maxAttempts && shouldRetry(lastResult.error as E, attempt)) {
+      // Exponential backoff
+      const delay = delayMs * Math.pow(backoffFactor, attempt - 1);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      continue;
+    }
+    
+    break;
+  }
+  
+  return lastResult;
 }
