@@ -284,33 +284,33 @@ export class ResultChain<T, E extends DataError | ServiceError> {
   }
 
   /**
-   * async support
-   */
-  async mapAsync<U>(fn: (data: T) => Promise<U>): Promise<ResultChain<U, E>> {
-    if (this.result.kind === 'success' && this.result.data !== undefined) {
-      try {
-        const transformed = await fn(this.result.data);
-        return new ResultChain<U, E> ({
-          kind: 'success',
-          data: transformed
-        })
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
-        return new ResultChain<U, E>({
-          kind: "error",
-          error: (this.result.error?.constructor as any).unexpected(
-            "Error transforming data asynchronously",
-            {source: err},
-          ) as E
-        })
-      }
+ * Asynchronously transforms the data in a success result
+ */
+async mapAsync<U>(fn: (data: T) => Promise<U>): Promise<ResultChain<U, E>> {
+  if (this.result.kind === 'success' && this.result.data !== undefined) {
+    try {
+      const transformed = await fn(this.result.data);
+      return new ResultChain<U, E>({
+        kind: 'success',
+        data: transformed
+      });
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      return new ResultChain<U, E>({
+        kind: "error",
+        error: (this.result.error?.constructor as any).unexpected(
+          "Error transforming data asynchronously",
+          { source: err },
+        ) as E,
+      });
     }
-
-    return new ResultChain<U, E>({
-      kind: "error",
-      error: this.result.error
-    })
   }
+
+  return new ResultChain<U, E>({
+    kind: "error",
+    error: this.result.error
+  });
+}
 }
 
 /**
