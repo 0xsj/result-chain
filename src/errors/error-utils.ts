@@ -1,5 +1,5 @@
-import { DataError } from './data-error';
-import { ServiceError } from './service-error';
+import { DataError, DataErrorKind } from './data-error';
+import { ServiceError, ServiceErrorKind } from './service-error';
 
 /**
  * Enriches an error with additional context information
@@ -16,30 +16,75 @@ export function enrichErrorContext<E extends DataError | ServiceError>(
   
   // Create a new error with the same properties but updated context
   if (error instanceof DataError) {
-    const newError = DataError[error.kind](
-      error.message,
-      { context: newContext, source: error.source }
-    ) as unknown as E;
-    
-    return newError;
+    switch (error.kind) {
+      case 'not_found':
+        return DataError.notFound(
+          String(newContext.entity || 'item'),
+          String(newContext.id || 'unknown'),
+          error.source
+        ) as unknown as E;
+      
+      case 'invalid':
+        return DataError.invalid(
+          error.message,
+          { context: newContext, source: error.source }
+        ) as unknown as E;
+      
+      case 'query':
+        return DataError.query(
+          error.message,
+          { context: newContext, source: error.source }
+        ) as unknown as E;
+      
+      case 'connection':
+        return DataError.connection(
+          error.message,
+          { context: newContext, source: error.source }
+        ) as unknown as E;
+      
+      case 'unexpected':
+      default:
+        return DataError.unexpected(
+          error.message,
+          { context: newContext, source: error.source }
+        ) as unknown as E;
+    }
   }
   
   if (error instanceof ServiceError) {
-    // Special handling for not_found which has a different constructor signature
-    if (error.kind === "not_found" && newContext.entity && newContext.id) {
-      return ServiceError.notFound(
-        String(newContext.entity),
-        String(newContext.id),
-        error.source
-      ) as unknown as E;
+    switch (error.kind) {
+      case 'not_found':
+        return ServiceError.notFound(
+          String(newContext.entity || 'item'),
+          String(newContext.id || 'unknown'),
+          error.source
+        ) as unknown as E;
+      
+      case 'validation':
+        return ServiceError.validation(
+          error.message,
+          { context: newContext, source: error.source }
+        ) as unknown as E;
+      
+      case 'auth':
+        return ServiceError.auth(
+          error.message,
+          { context: newContext, source: error.source }
+        ) as unknown as E;
+      
+      case 'network':
+        return ServiceError.network(
+          error.message,
+          { context: newContext, source: error.source }
+        ) as unknown as E;
+      
+      case 'unexpected':
+      default:
+        return ServiceError.unexpected(
+          error.message,
+          { context: newContext, source: error.source }
+        ) as unknown as E;
     }
-    
-    const newError = ServiceError[error.kind](
-      error.message,
-      { context: newContext, source: error.source }
-    ) as unknown as E;
-    
-    return newError;
   }
   
   return error;
